@@ -23,6 +23,12 @@ def read_pdf(file_path):
     logging.debug(f"Extracted text from {file_path}, length: {len(text)}")
     return text
 
+# Split text into chunks
+def split_text(text, chunk_size=500, overlap=100):
+    chunks = [text[i:i + chunk_size] for i in range(0, len(text), chunk_size - overlap)]
+    logging.debug(f"Split text into {len(chunks)} chunks with chunk size {chunk_size} and overlap {overlap}")
+    return chunks
+
 # Routes
 @app.route('/')
 def index():
@@ -70,7 +76,8 @@ def upload_pdf():
 
         # Process the PDF
         text = read_pdf(file_path)
-        logging.info(f"Extracted text: {text[:100]}...")
+        chunks = split_text(text)
+        logging.info(f"Split text into {len(chunks)} chunks")
 
         return render_template_string("""
         <!DOCTYPE html>
@@ -93,7 +100,7 @@ def upload_pdf():
             <p id="answer">{{ answer }}</p>
         </body>
         </html>
-        """, answer="Text extraction successful!")
+        """, answer="Text splitting successful!")
     except Exception as e:
         logging.error(f"Error processing request: {e}")
         return jsonify({"error": "An error occurred while processing your request"}), 500
