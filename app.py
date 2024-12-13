@@ -3,6 +3,7 @@ from models.query_handler import query_pdf_with_better_context
 from PyPDF2 import PdfReader
 import os
 import logging
+from db import get_connection, initialize_db
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -14,6 +15,9 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, filename='app.log', format='%(asctime)s - %(message)s')
+
+# Initialize database
+initialize_db()
 
 # Read PDF utility function
 def read_pdf(file_path):
@@ -81,6 +85,20 @@ def upload_pdf():
         answer = query_pdf_with_better_context(query, chunks)
 
         logging.info(f"Generated answer: {answer}")
+
+        # Insert data into the database
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        # Insert PDF information
+        cursor.execute("INSERT INTO pdfs (filename, filepath) VALUES (?, ?)", (file.filename, file_path))
+        pdf_id = cursor.lastrowid
+
+        # Insert query and response information
+        cursor.execute("INSERT INTO queries (pdf_id, query, response) VALUES (?, ?, ?)", (pdf_id, query, answer))
+
+        conn.commit()
+        conn.close()
 
         return render_template_string("""
         <!DOCTYPE html>
