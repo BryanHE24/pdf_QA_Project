@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, render_template_string
+from models.query_handler import query_pdf_with_better_context
 from PyPDF2 import PdfReader
 import os
 import logging
@@ -77,7 +78,9 @@ def upload_pdf():
         # Process the PDF
         text = read_pdf(file_path)
         chunks = split_text(text)
-        logging.info(f"Split text into {len(chunks)} chunks")
+        answer = query_pdf_with_better_context(query, chunks)
+
+        logging.info(f"Generated answer: {answer}")
 
         return render_template_string("""
         <!DOCTYPE html>
@@ -100,7 +103,7 @@ def upload_pdf():
             <p id="answer">{{ answer }}</p>
         </body>
         </html>
-        """, answer="Text splitting successful!")
+        """, answer=answer)
     except Exception as e:
         logging.error(f"Error processing request: {e}")
         return jsonify({"error": "An error occurred while processing your request"}), 500
